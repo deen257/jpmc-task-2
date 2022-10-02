@@ -1,13 +1,15 @@
-import React, { Component } from 'react';
-import DataStreamer, { ServerRespond } from './DataStreamer';
-import Graph from './Graph';
-import './App.css';
+import React, { Component } from 'react'
+import DataStreamer, { ServerRespond } from './DataStreamer'
+import Graph from './Graph'
+import './App.css'
 
 /**
  * State declaration for <App />
  */
 interface IState {
-  data: ServerRespond[],
+  data: ServerRespond[]
+  showGraph: boolean
+  loading: boolean
 }
 
 /**
@@ -16,31 +18,50 @@ interface IState {
  */
 class App extends Component<{}, IState> {
   constructor(props: {}) {
-    super(props);
+    super(props)
 
     this.state = {
       // data saves the server responds.
       // We use this state to parse data down to the child element (Graph) as element property
       data: [],
-    };
+      showGraph: false,
+      loading: false,
+    }
   }
 
   /**
    * Render Graph react component with state.data parse as property data
    */
   renderGraph() {
-    return (<Graph data={this.state.data}/>)
+    if (this.state.showGraph) {
+      return <Graph data={this.state.data} />
+    } else {
+      if (this.state.loading) {
+        return <div className='loading'></div>
+      }
+    }
   }
 
   /**
    * Get new data from server and update the state with the new data
    */
   getDataFromServer() {
-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
-      // Update the state by creating a new array of data that consists of
-      // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
-    });
+    let x: number = 0
+    const interval = setInterval(() => {
+      DataStreamer.getData((serverResponds: ServerRespond[]) => {
+        // Update the state by creating a new array of data that consists of
+        // Previous data in the state and the new data from server
+        this.setState({
+          data: serverResponds,
+          showGraph: true,
+          loading: false, // Removes loading icon since we now have the Graph data to display
+        })
+      })
+      x += 1
+      if (x > 1000) {
+        clearInterval(interval)
+      }
+    }, 100)
   }
 
   /**
@@ -48,27 +69,27 @@ class App extends Component<{}, IState> {
    */
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          Bank & Merge Co Task 2
-        </header>
-        <div className="App-content">
-          <button className="btn btn-primary Stream-button"
+      <div className='App'>
+        <header className='App-header'>Bank & Merge Co Task 2</header>
+        <div className='App-content'>
+          <button
+            className='btn btn-primary Stream-button'
             // when button is click, our react app tries to request
             // new data from the server.
             // As part of your task, update the getDataFromServer() function
             // to keep requesting the data every 100ms until the app is closed
             // or the server does not return anymore data.
-            onClick={() => {this.getDataFromServer()}}>
+            onClick={() => {
+              {this.setState({ loading: true }); this.getDataFromServer()}
+            }}
+          >
             Start Streaming Data
           </button>
-          <div className="Graph">
-            {this.renderGraph()}
-          </div>
+          <div className='Graph'>{this.renderGraph()}</div>
         </div>
       </div>
     )
   }
 }
 
-export default App;
+export default App
